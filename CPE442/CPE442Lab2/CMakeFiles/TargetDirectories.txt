@@ -1,0 +1,3 @@
+/home/limccart/EE442Lab2/CMakeFiles/image_viewer.dir
+/home/limccart/EE442Lab2/CMakeFiles/edit_cache.dir
+/home/limccart/EE442Lab2/CMakeFiles/rebuild_cache.dir
