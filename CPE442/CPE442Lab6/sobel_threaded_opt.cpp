@@ -88,7 +88,7 @@ void* sobel_thread(void* sobelArgs){
 
         for(pix = 0; pix < frame_pixels - 7; pix += 8){
             results = vdup_n_u8(0); //clear vals
-            temp_rgb = vld3q_u8(in_ptr); //load 3 vectors for RGB
+            temp_rgb = vld3_u8(in_ptr); //load 3 vectors for RGB
             for(uint8_t i = 0; i < 3; i++){
                 temp_val[i] = vmull_u8(temp_rgb[i], gray_weights[i]); //widening multiply
                 temp_val[i] = vshrn_u16(temp_val[i]); //divide back by 256
