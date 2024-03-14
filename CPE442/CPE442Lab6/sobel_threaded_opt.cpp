@@ -70,7 +70,7 @@ void* sobel_thread(void* sobelArgs){
     }   
 
     int16x8_t TL, ML, BL, TM, BM, TR, MR, BR, sobelWvect;
-    long frame_pixels = threadArgs->inMat->rows * threadArgs->inMat->cols;
+    long frame_pixels = (threadArgs->end_row - threadArgs->start_row) * threadArgs->inMat->cols;
     long pix;
     uint8_t cleanup = frame_pixels % 8; //leftover pixels, if any
     uint8x8x3_t temp_rgb, gray_weights;
@@ -81,21 +81,20 @@ void* sobel_thread(void* sobelArgs){
     while(threadArgs->do_work){
         pthread_barrier_wait(&newframeReady); //wait until new frame is in
         gray_weights = vld3_u8(GRAY_WEIGHTS); 
-        for(img_row = threadArgs->start_row; img_row < threadArgs->end_row; img_row++){ //iterate row
-            gray_ptr = threadArgs->grayMat->ptr<uchar>(img_row); //ptr to first pixel in current row
-            in_ptr = threadArgs->inMat->ptr<uchar>(img_row);
-            for (img_col = 0; img_col < (threadArgs->grayMat->cols - 7); img_col += 8){ //iterate cols
-                results = vdup_n_u8(0); //clear vals
-                temp_rgb = vld3_u8(in_ptr); //load 3 vectors for RGB
-                for(uint8_t i = 0; i < 3; i++){
-                    temp_val.val[i] = vmull_u8(temp_rgb.val[i], gray_weights.val[i]); //widening multiply
-                    temp_val.val[i] = vshrq_n_u16(temp_val.val[i], 8); //divide back by 256
-                    results = vadd_u8(results, vmovn_u16(temp_val.val[i])); //add to gray results
-                }
-                vst1_u8(gray_ptr, results);
-                in_ptr += 24;
-                gray_ptr += 8;
-        }}
+        gray_ptr = threadArgs->grayMat->ptr<uchar>(threadArgs->start_row); //ptr to first pixel in output mat
+        in_ptr = threadArgs->inMat->ptr<uchar>(threadArgs->start_row); //first pixel in input
+        for(pix = 0; pix < frame_pixels; pix += 8){ //move 8 pixels
+            results = vdup_n_u8(0); //clear vals
+            temp_rgb = vld3_u8(in_ptr); //load 3 vectors for RGB
+            for(uint8_t i = 0; i < 3; i++){
+                temp_val.val[i] = vmull_u8(temp_rgb.val[i], gray_weights.val[i]); //widening multiply
+                temp_val.val[i] = vshrq_n_u16(temp_val.val[i], 8); //divide back by 256
+                results = vadd_u8(results, vmovn_u16(temp_val.val[i])); //add to gray results
+            }
+            vst1_u8(gray_ptr, results);
+            in_ptr += 24;
+            gray_ptr += 8;
+        }
         /*
         //cleanup for last pixels if any
         for(pix = 0; pix < cleanup; pix++){
