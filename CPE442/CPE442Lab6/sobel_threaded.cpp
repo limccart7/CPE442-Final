@@ -133,6 +133,13 @@ int sobel_filter_threaded(string videoName){
 
         cap >> inMat; //put new frame in
     }
+}
 
-    
+int main(int argc, char* argv[]){
+    if(argc != 2){
+        printf("Usage: ./sobel_threaded <filename>.mp4");
+        return -1;
+    }
+    sobel_filter_threaded(argv[1]);
+    return 0;
 }
