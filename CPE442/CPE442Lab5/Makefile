@@ -1,6 +1,6 @@
 
 CC = g++ 
-FLAGS = -Wall -O0 -g -lpthread
+FLAGS = -Wall -O0 -g -lpthread -fpermissive
 PKG_CONFIG = `pkg-config --libs --cflags opencv4`
 
 

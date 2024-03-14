@@ -202,7 +202,7 @@ int sobel_filter_threaded(string videoName){
 
     auto end = chrono::steady_clock::now();
     auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
-    double fps = static_cast<double>(frameCount) / (duration / 1000.0);
+    double fps = static_cast<double>(frames) / (duration / 1000.0);
 
     cout << "Averaged per second: " << fps << endl;
 
@@ -211,7 +211,18 @@ int sobel_filter_threaded(string videoName){
         thread_args[i].do_work = 0; //break out of loop
         pthread_join(sobelThreads[i], NULL); //collapse threads
     }
-    pthread_barrier_destroy(&outputReady, NULL, NUM_THREADS + 1);
-    pthread_barrier_destroy(&newframeReady, NULL, NUM_THREADS + 1);
+    pthread_barrier_destroy(&outputReady);
+    pthread_barrier_destroy(&newframeReady);
+
+    return 0;
     
+}
+
+int main(int argc, char* argv[]){
+    if(argc != 2){
+        printf("Usage: ./sobel_threaded_O3 <filename>.mp4");
+        return -1;
+    }
+    sobel_filter_threaded(argv[1]);
+    return 0;
 }
