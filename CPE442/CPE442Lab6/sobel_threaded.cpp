@@ -116,8 +116,11 @@ int sobel_filter_threaded(string videoName){
         thread_args[i].start_row = (i * inMat.rows) / NUM_THREADS;
         thread_args[i].end_row = ((i + 1) * inMat.rows) / NUM_THREADS;
     }
+    auto start = chrono::steady_clock::now(); //get start time
+    long frames = 0;
     
     while(1){ //not done with code to actually setup and take down the threads
+        frames += 1;
         if(inMat.empty()){
             break;
         }
@@ -128,18 +131,27 @@ int sobel_filter_threaded(string videoName){
             pthread_join(sobelThreads[i], NULL);
         }
         imshow(title, outMat);
-        waitKey(2);
+        if (waitKey(1) >= 0) {
+            break;
+        }
 
 
         cap >> inMat; //put new frame in
     }
+    auto end = chrono::steady_clock::now();
+    auto duration = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+    double fps = static_cast<double>(frames) / (duration / 1000.0);
+
+    cout << "Averaged per second: " << fps << endl;
+    destroyAllWindows();
+    return 0;
 }
 
 int main(int argc, char* argv[]){
-    if(argc != 2){
-        printf("Usage: ./sobel_threaded <filename>.mp4");
-        return -1;
-    }
-    sobel_filter_threaded(argv[1]);
+    // if(argc != 2){
+    //     printf("Usage: ./sobel_threaded <filename>.mp4");
+    //     return -1;
+    // }
+    sobel_filter_threaded("mgs2_funny.mp4");
     return 0;
 }

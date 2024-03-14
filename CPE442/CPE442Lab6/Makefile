@@ -24,4 +24,4 @@ sobel_threaded_O3.o: sobel_threaded.cpp sobel_threaded.hpp
 	$(CXX) sobel_threaded_O3.cpp $(FLAGS_OPT) -c $(PKG_CONFIG)
 
 clean:
-	rm -f *.o lab6 *.gch
+	rm -f *.o sobel_threaded sobel_threaded_O3 sobel_threaded_opt *.gch

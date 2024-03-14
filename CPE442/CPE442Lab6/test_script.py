@@ -2,6 +2,7 @@ import subprocess
 
 # List of targets to build and run
 targets = ["sobel_threaded", "sobel_threaded_opt", "sobel_threaded_O3"]
+file = " mgs2_funny.mp4"
 
 # Build each target
 for target in targets:

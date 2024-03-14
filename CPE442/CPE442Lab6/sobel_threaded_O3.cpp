@@ -70,42 +70,39 @@ void* sobel_thread(void* sobelArgs){
     }   
 
     int16x8_t TL, ML, BL, TM, BM, TR, MR, BR, sobelWvect;
-    long frame_pixels = threadArgs->inMat->rows * threadArgs->inMat->cols;
+    long frame_pixels = (threadArgs->end_row - threadArgs->start_row) * threadArgs->inMat->cols;
     long pix;
     uint8_t cleanup = frame_pixels % 8; //leftover pixels, if any
     uint8x8x3_t temp_rgb, gray_weights;
-    uint8x16x3_t temp_val;
+    uint16x8x3_t temp_val;
     uint8x8_t results;
-    uint8_t* in_ptr, gray_ptr, gray_top_row, gray_mid_row, gray_bottom_row, output;
+    uint8_t* in_ptr, *gray_ptr, *gray_top_row, *gray_mid_row, *gray_bottom_row, *output;
 
     while(threadArgs->do_work){
         pthread_barrier_wait(&newframeReady); //wait until new frame is in
-
-        in_ptr = threadArgs->inMat->ptr<uchar>(threadArgs->start_row);
-        gray_ptr = threadArgs->grayMat->ptr<uchar>(threadArgs->start_row);
-        frame_pixels = threadArgs->inMat->rows * threadArgs->inMat->cols;
-        gray_weights = vld3_u8(&GRAY_WEIGHTS); 
-
-        for(pix = 0; pix < frame_pixels - 7; pix += 8){
+        gray_weights = vld3_u8(GRAY_WEIGHTS); 
+        gray_ptr = threadArgs->grayMat->ptr<uchar>(threadArgs->start_row); //ptr to first pixel in output mat
+        in_ptr = threadArgs->inMat->ptr<uchar>(threadArgs->start_row); //first pixel in input
+        for(pix = 0; pix < frame_pixels; pix += 8){ //move 8 pixels
             results = vdup_n_u8(0); //clear vals
-            temp_rgb = vld3q_u8(in_ptr); //load 3 vectors for RGB
+            temp_rgb = vld3_u8(in_ptr); //load 3 vectors for RGB
             for(uint8_t i = 0; i < 3; i++){
-                temp_val[i] = vmull_u8(temp_rgb[i], gray_weights[i]); //widening multiply
-                temp_val[i] = vshrn_u16(temp_val[i]); //divide back by 256
-                results = vadd_u8(results, vmovn_u16(temp_val[i])); //add to gray results
+                temp_val.val[i] = vmull_u8(temp_rgb.val[i], gray_weights.val[i]); //widening multiply
+                temp_val.val[i] = vshrq_n_u16(temp_val.val[i], 8); //divide back by 256
+                results = vadd_u8(results, vmovn_u16(temp_val.val[i])); //add to gray results
             }
             vst1_u8(gray_ptr, results);
-            in_ptr += 8;
+            in_ptr += 24;
             gray_ptr += 8;
         }
-
+        /*
         //cleanup for last pixels if any
-        for(pix 0; pix < cleanup; pix++){
+        for(pix = 0; pix < cleanup; pix++){
             uint8_t grayVal = ((0.2126 * in_ptr[2]) + (0.7152 * in_ptr[1]) + (0.0722 * in_ptr[0]));
             *gray_ptr = grayVal; //put the value in..?
             gray_ptr++;
             in_ptr++;
-        }
+        }*/
     
         //grayscale mat should be shared, can grab pixel values no problem
         for(img_row = start_row; img_row < end_row; img_row++){ //iterate row
@@ -205,24 +202,16 @@ int sobel_filter_threaded(string videoName){
     double fps = static_cast<double>(frames) / (duration / 1000.0);
 
     cout << "Averaged per second: " << fps << endl;
-
-    //destroy
-    for(int i = 0; i < NUM_THREADS; i++){ //wait for them to finish
-        thread_args[i].do_work = 0; //break out of loop
-        pthread_join(sobelThreads[i], NULL); //collapse threads
-    }
-    pthread_barrier_destroy(&outputReady);
-    pthread_barrier_destroy(&newframeReady);
-
+    destroyAllWindows();
     return 0;
     
 }
 
 int main(int argc, char* argv[]){
-    if(argc != 2){
-        printf("Usage: ./sobel_threaded_O3 <filename>.mp4");
-        return -1;
-    }
-    sobel_filter_threaded(argv[1]);
+    // if(argc != 2){
+    //     printf("Usage: ./sobel_threaded <filename>.mp4");
+    //     return -1;
+    // }
+    sobel_filter_threaded("mgs2_funny.mp4");
     return 0;
 }
